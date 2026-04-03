@@ -1,50 +1,59 @@
-# Welcome to your Expo app 👋
+# Gestion Chasis Front (React Native + Expo)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Frontend mobile/web conectado a la API de Gestion Chasis.
 
-## Get started
+## Requisitos
 
-1. Install dependencies
+1. Node.js 20+
+2. API backend disponible
 
-   ```bash
-   npm install
-   ```
+## Configuracion de entorno
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Define la URL de la API con variable publica de Expo:
 
 ```bash
-npm run reset-project
+EXPO_PUBLIC_API_URL=http://localhost:8000/api
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Notas:
 
-## Learn more
+1. En Android emulador, usa `http://10.0.2.2:8000/api`.
+2. Si no defines variable, el frontend usa por defecto:
+	- Android: `http://10.0.2.2:8000/api`
+	- Web/iOS: `http://localhost:8000/api`
 
-To learn more about developing your project with Expo, look at the following resources:
+## Instalacion
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npm install
+```
 
-## Join the community
+## Ejecucion
 
-Join our community of developers creating universal apps.
+```bash
+npm start
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Opciones:
+
+1. `npm run android`
+2. `npm run web`
+
+## Modulos implementados
+
+1. Login JWT
+2. Perfil y cierre de sesion
+3. Listado de chasis con filtros
+4. Detalle y eliminacion de chasis
+5. Alta de chasis (sin enviar `estado` ni `estado_id`)
+6. Catalogos (tipos, ubicaciones, estados)
+7. Historial (acciones y movimientos)
+
+## Estructura principal
+
+1. `app/(auth)` flujo de autenticacion
+2. `app/(tabs)` vistas principales
+3. `app/chasis` formulario y detalle
+4. `src/lib/http.ts` cliente Axios con bearer token y manejo de errores
+5. `src/context/auth-context.tsx` estado global de sesion
+6. `src/services/*` servicios por modulo API

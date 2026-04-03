@@ -1,98 +1,221 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { Link } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
-export default function HomeScreen() {
+import { getChasis } from '@/src/services/chasis.service';
+import { ApiError } from '@/src/types/api';
+import { Chasis } from '@/src/types/domain';
+
+function ChasisItem({ item }: { item: Chasis }) {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <Link href={`/chasis/${item.id}`} asChild>
+      <Pressable style={styles.card}>
+        <View style={styles.rowBetween}>
+          <Text style={styles.cardTitle}>{item.nombre}</Text>
+          <Text style={styles.badge}>{item.estado_actual ?? 'sin estado'}</Text>
+        </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        <Text style={styles.cardSub}>Tipo: {item.tipo_chasis_id}</Text>
+        <Text style={styles.cardSub}>Placa: {item.placa ?? 'N/A'}</Text>
+
+        {item.equipamientos_en_mal_estado?.length ? (
+          <Text style={styles.warning}>
+            Equipamiento en mal estado: {item.equipamientos_en_mal_estado.join(', ')}
+          </Text>
+        ) : (
+          <Text style={styles.ok}>Sin averias reportadas</Text>
+        )}
+      </Pressable>
+    </Link>
+  );
+}
+
+export default function ChasisScreen() {
+  const [chasis, setChasis] = useState<Chasis[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState('');
+  const [estado, setEstado] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    setError(null);
+
+    try {
+      const result = await getChasis({
+        per_page: 30,
+        search: search || undefined,
+        estado: estado || undefined,
+      });
+      setChasis(result.data);
+    } catch (err) {
+      setError((err as ApiError).message);
+    }
+  }, [estado, search]);
+
+  useEffect(() => {
+    fetchData().finally(() => setLoading(false));
+  }, [fetchData]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  }, [fetchData]);
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.filters}>
+        <TextInput
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Buscar por nombre, placa o numero"
+          style={styles.input}
+        />
+        <TextInput
+          value={estado}
+          onChangeText={setEstado}
+          placeholder="Estado (slug), ejemplo: revision"
+          style={styles.input}
+        />
+
+        <View style={styles.row}>
+          <Pressable style={styles.button} onPress={fetchData}>
+            <Text style={styles.buttonText}>Filtrar</Text>
+          </Pressable>
+          <Link href="/chasis/new" asChild>
+            <Pressable style={styles.secondaryButton}>
+              <Text style={styles.secondaryButtonText}>Nuevo</Text>
+            </Pressable>
+          </Link>
+        </View>
+      </View>
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#0284c7" style={styles.loader} />
+      ) : null}
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      <FlatList
+        data={chasis}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={({ item }) => <ChasisItem item={item} />}
+        contentContainerStyle={styles.list}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        ListEmptyComponent={
+          !loading ? <Text style={styles.empty}>No hay chasis para mostrar.</Text> : null
+        }
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+  },
+  filters: {
+    padding: 12,
+    gap: 8,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+  },
+  row: {
     flexDirection: 'row',
+    gap: 8,
+  },
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  button: {
+    flex: 1,
+    backgroundColor: '#0284c7',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  secondaryButton: {
+    flex: 1,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  secondaryButtonText: {
+    color: '#0f172a',
+    fontWeight: '700',
+  },
+  list: {
+    padding: 12,
+    gap: 10,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    gap: 6,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  cardSub: {
+    color: '#475569',
+  },
+  badge: {
+    backgroundColor: '#e0f2fe',
+    color: '#0c4a6e',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    textTransform: 'capitalize',
+  },
+  warning: {
+    color: '#b45309',
+    fontWeight: '600',
+  },
+  ok: {
+    color: '#166534',
+    fontWeight: '600',
+  },
+  loader: {
+    marginTop: 16,
+  },
+  error: {
+    color: '#dc2626',
+    paddingHorizontal: 12,
+    paddingTop: 10,
+  },
+  empty: {
+    textAlign: 'center',
+    marginTop: 30,
+    color: '#475569',
   },
 });
