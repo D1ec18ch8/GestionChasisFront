@@ -1,18 +1,19 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 
+import { getTiposChasis, getUbicaciones } from '@/src/services/catalogs.service';
 import { deleteChasis, getChasisById } from '@/src/services/chasis.service';
 import { ApiError } from '@/src/types/api';
-import { Chasis } from '@/src/types/domain';
+import { Chasis, TipoChasis, Ubicacion } from '@/src/types/domain';
 
 function Field({ label, value }: { label: string; value?: string | number | null }) {
   return (
@@ -29,13 +30,21 @@ export default function ChasisDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [data, setData] = useState<Chasis | null>(null);
+  const [tipos, setTipos] = useState<TipoChasis[]>([]);
+  const [ubicaciones, setUbicaciones] = useState<Ubicacion[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       try {
-        const result = await getChasisById(Number(id));
+        const [result, tiposData, ubicacionesData] = await Promise.all([
+          getChasisById(Number(id)),
+          getTiposChasis(),
+          getUbicaciones(),
+        ]);
         setData(result);
+        setTipos(tiposData);
+        setUbicaciones(ubicacionesData);
       } catch (err) {
         setError((err as ApiError).message);
       } finally {
@@ -82,13 +91,18 @@ export default function ChasisDetailScreen() {
     return <Text style={styles.empty}>No se encontro el chasis.</Text>;
   }
 
+  const tipoNombre = tipos.find((item) => item.id === data.tipo_chasis_id)?.nombre ?? 'N/A';
+  const ubicacionNombre =
+    ubicaciones.find((item) => item.id === data.ubicacion_id)?.nombre ??
+    (data.ubicacion_id ? String(data.ubicacion_id) : 'N/A');
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.card}>
         <Field label="Nombre" value={data.nombre} />
         <Field label="Estado actual" value={data.estado_actual} />
-        <Field label="Tipo chasis id" value={data.tipo_chasis_id} />
-        <Field label="Ubicacion id" value={data.ubicacion_id} />
+        <Field label="Tipo chasis" value={tipoNombre} />
+        <Field label="Ubicacion" value={ubicacionNombre} />
         <Field label="Categoria" value={data.categoria} />
         <Field label="Numero" value={data.numero} />
         <Field label="Placa" value={data.placa} />

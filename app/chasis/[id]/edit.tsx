@@ -110,7 +110,7 @@ export default function EditChasisScreen() {
     setError(null);
     try {
       await updateChasis(Number(id), payload);
-      router.replace(`/chasis/${id}`);
+      router.replace('/(tabs)');
     } catch (err) {
       setError((err as ApiError).message);
     } finally {

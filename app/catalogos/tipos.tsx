@@ -148,7 +148,6 @@ export default function TiposCatalogScreen() {
         renderItem={({ item }) => (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>{item.nombre}</Text>
-            <Text style={styles.cardSub}>ID: {item.id}</Text>
             <View style={styles.row}>
               <Pressable
                 style={styles.secondaryButton}

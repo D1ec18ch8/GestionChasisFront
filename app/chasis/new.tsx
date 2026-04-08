@@ -1,15 +1,15 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
-    ActivityIndicator,
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 
 import { getTiposChasis, getUbicaciones } from '@/src/services/catalogs.service';
@@ -33,6 +33,10 @@ export default function NewChasisScreen() {
   const [apiError, setApiError] = useState<ApiError | null>(null);
   const [tipoModalVisible, setTipoModalVisible] = useState(false);
   const [ubicModalVisible, setUbicModalVisible] = useState(false);
+  const [tipoFilterInput, setTipoFilterInput] = useState('');
+  const [tipoFilterTerm, setTipoFilterTerm] = useState('');
+  const [ubicFilterInput, setUbicFilterInput] = useState('');
+  const [ubicFilterTerm, setUbicFilterTerm] = useState('');
 
   const [tipoChasisId, setTipoChasisId] = useState('');
   const [nombre, setNombre] = useState('');
@@ -97,8 +101,8 @@ export default function NewChasisScreen() {
     setApiError(null);
 
     try {
-      const result = await createChasis(payload);
-      router.replace(`/chasis/${result.id}`);
+      await createChasis(payload);
+      router.replace('/(tabs)');
     } catch (err) {
       setApiError(err as ApiError);
     } finally {
@@ -108,6 +112,19 @@ export default function NewChasisScreen() {
 
   const selectedTipo = tipos.find((item) => item.id === Number(tipoChasisId));
   const selectedUbicacion = ubicaciones.find((item) => item.id === Number(ubicacionId));
+  const filteredTipos = useMemo(() => {
+    const term = tipoFilterTerm.trim().toLowerCase();
+    if (!term) return tipos;
+    return tipos.filter((item) => item.nombre.toLowerCase().includes(term));
+  }, [tipos, tipoFilterTerm]);
+  const filteredUbicaciones = useMemo(() => {
+    const term = ubicFilterTerm.trim().toLowerCase();
+    if (!term) return ubicaciones;
+    return ubicaciones.filter((item) => {
+      const bag = `${item.nombre} ${item.codigo ?? ''}`.toLowerCase();
+      return bag.includes(term);
+    });
+  }, [ubicaciones, ubicFilterTerm]);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -124,7 +141,7 @@ export default function NewChasisScreen() {
         />
         <Pressable style={styles.selector} onPress={() => setTipoModalVisible(true)}>
           <Text style={styles.selectorText}>
-            {selectedTipo ? `${selectedTipo.nombre} (id ${selectedTipo.id})` : 'Selecciona tipo de chasis'}
+            {selectedTipo ? selectedTipo.nombre : 'Selecciona tipo de chasis'}
           </Text>
         </Pressable>
         {!!pickFieldError(apiError ?? undefined, 'tipo_chasis_id') ? (
@@ -140,7 +157,7 @@ export default function NewChasisScreen() {
         <Pressable style={styles.selector} onPress={() => setUbicModalVisible(true)}>
           <Text style={styles.selectorText}>
             {selectedUbicacion
-              ? `${selectedUbicacion.nombre} (id ${selectedUbicacion.id})`
+              ? selectedUbicacion.nombre
               : 'Selecciona ubicacion'}
           </Text>
         </Pressable>
@@ -185,8 +202,27 @@ export default function NewChasisScreen() {
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Tipo de chasis</Text>
+            <TextInput
+              value={tipoFilterInput}
+              onChangeText={setTipoFilterInput}
+              placeholder="Buscar tipo"
+              style={styles.input}
+            />
+            <View style={styles.modalActions}>
+              <Pressable style={styles.modalActionButton} onPress={() => setTipoFilterTerm(tipoFilterInput.trim())}>
+                <Text style={styles.modalActionText}>Filtrar</Text>
+              </Pressable>
+              <Pressable
+                style={styles.modalActionSecondaryButton}
+                onPress={() => {
+                  setTipoFilterInput('');
+                  setTipoFilterTerm('');
+                }}>
+                <Text style={styles.modalActionSecondaryText}>Limpiar</Text>
+              </Pressable>
+            </View>
             <ScrollView style={styles.modalList}>
-              {tipos.map((item) => (
+              {filteredTipos.map((item) => (
                 <Pressable
                   key={item.id}
                   style={styles.modalItem}
@@ -209,8 +245,27 @@ export default function NewChasisScreen() {
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Ubicacion</Text>
+            <TextInput
+              value={ubicFilterInput}
+              onChangeText={setUbicFilterInput}
+              placeholder="Buscar ubicacion"
+              style={styles.input}
+            />
+            <View style={styles.modalActions}>
+              <Pressable style={styles.modalActionButton} onPress={() => setUbicFilterTerm(ubicFilterInput.trim())}>
+                <Text style={styles.modalActionText}>Filtrar</Text>
+              </Pressable>
+              <Pressable
+                style={styles.modalActionSecondaryButton}
+                onPress={() => {
+                  setUbicFilterInput('');
+                  setUbicFilterTerm('');
+                }}>
+                <Text style={styles.modalActionSecondaryText}>Limpiar</Text>
+              </Pressable>
+            </View>
             <ScrollView style={styles.modalList}>
-              {ubicaciones.map((item) => (
+              {filteredUbicaciones.map((item) => (
                 <Pressable
                   key={item.id}
                   style={styles.modalItem}
@@ -324,6 +379,32 @@ const styles = StyleSheet.create({
   },
   modalList: {
     maxHeight: 280,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  modalActionButton: {
+    flex: 1,
+    backgroundColor: '#0284c7',
+    borderRadius: 10,
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  modalActionSecondaryButton: {
+    flex: 1,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 10,
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  modalActionText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  modalActionSecondaryText: {
+    color: '#0f172a',
+    fontWeight: '700',
   },
   modalItem: {
     paddingVertical: 10,

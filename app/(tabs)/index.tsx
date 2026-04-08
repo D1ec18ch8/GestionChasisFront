@@ -11,11 +11,14 @@ import {
   View,
 } from 'react-native';
 
+import { getTiposChasis } from '@/src/services/catalogs.service';
 import { getChasis } from '@/src/services/chasis.service';
 import { ApiError } from '@/src/types/api';
-import { Chasis } from '@/src/types/domain';
+import { Chasis, TipoChasis } from '@/src/types/domain';
 
-function ChasisItem({ item }: { item: Chasis }) {
+function ChasisItem({ item, tipos }: { item: Chasis; tipos: TipoChasis[] }) {
+  const tipoNombre = tipos.find((tipo) => tipo.id === item.tipo_chasis_id)?.nombre ?? 'N/A';
+
   return (
     <Link href={`/chasis/${item.id}`} asChild>
       <Pressable style={styles.card}>
@@ -24,7 +27,7 @@ function ChasisItem({ item }: { item: Chasis }) {
           <Text style={styles.badge}>{item.estado_actual ?? 'sin estado'}</Text>
         </View>
 
-        <Text style={styles.cardSub}>Tipo: {item.tipo_chasis_id}</Text>
+        <Text style={styles.cardSub}>Tipo: {tipoNombre}</Text>
         <Text style={styles.cardSub}>Placa: {item.placa ?? 'N/A'}</Text>
 
         {item.equipamientos_en_mal_estado?.length ? (
@@ -41,8 +44,11 @@ function ChasisItem({ item }: { item: Chasis }) {
 
 export default function ChasisScreen() {
   const [chasis, setChasis] = useState<Chasis[]>([]);
+  const [tipos, setTipos] = useState<TipoChasis[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const [estadoInput, setEstadoInput] = useState('');
   const [search, setSearch] = useState('');
   const [estado, setEstado] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -62,9 +68,18 @@ export default function ChasisScreen() {
     }
   }, [estado, search]);
 
+  const fetchTipos = useCallback(async () => {
+    try {
+      const data = await getTiposChasis();
+      setTipos(data);
+    } catch {
+      setTipos([]);
+    }
+  }, []);
+
   useEffect(() => {
-    fetchData().finally(() => setLoading(false));
-  }, [fetchData]);
+    Promise.all([fetchData(), fetchTipos()]).finally(() => setLoading(false));
+  }, [fetchData, fetchTipos]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -76,20 +91,25 @@ export default function ChasisScreen() {
     <View style={styles.container}>
       <View style={styles.filters}>
         <TextInput
-          value={search}
-          onChangeText={setSearch}
+          value={searchInput}
+          onChangeText={setSearchInput}
           placeholder="Buscar por nombre, placa o numero"
           style={styles.input}
         />
         <TextInput
-          value={estado}
-          onChangeText={setEstado}
+          value={estadoInput}
+          onChangeText={setEstadoInput}
           placeholder="Estado (slug), ejemplo: revision"
           style={styles.input}
         />
 
         <View style={styles.row}>
-          <Pressable style={styles.button} onPress={fetchData}>
+          <Pressable
+            style={styles.button}
+            onPress={() => {
+              setSearch(searchInput.trim());
+              setEstado(estadoInput.trim());
+            }}>
             <Text style={styles.buttonText}>Filtrar</Text>
           </Pressable>
           <Link href="/chasis/new" asChild>
@@ -109,7 +129,7 @@ export default function ChasisScreen() {
       <FlatList
         data={chasis}
         keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => <ChasisItem item={item} />}
+        renderItem={({ item }) => <ChasisItem item={item} tipos={tipos} />}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
