@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -13,24 +13,20 @@ import {
 } from 'react-native';
 
 import { getTiposChasis, getUbicaciones } from '@/src/services/catalogs.service';
-import { createChasis } from '@/src/services/chasis.service';
+import { getChasisById, updateChasis } from '@/src/services/chasis.service';
 import { ApiError } from '@/src/types/api';
 import { ChasisPayload, TipoChasis, Ubicacion } from '@/src/types/domain';
 
-function pickFieldError(error?: ApiError, field?: string) {
-  if (!error?.errors || !field) return null;
+export default function EditChasisScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
 
-  const value = error.errors[field];
-  if (!value) return null;
-  return Array.isArray(value) ? value[0] : value;
-}
-
-export default function NewChasisScreen() {
   const [tipos, setTipos] = useState<TipoChasis[]>([]);
   const [ubicaciones, setUbicaciones] = useState<Ubicacion[]>([]);
-  const [loadingCatalogs, setLoadingCatalogs] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [apiError, setApiError] = useState<ApiError | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
   const [tipoModalVisible, setTipoModalVisible] = useState(false);
   const [ubicModalVisible, setUbicModalVisible] = useState(false);
 
@@ -48,22 +44,39 @@ export default function NewChasisScreen() {
   const [averiaLlantas, setAveriaLlantas] = useState(false);
 
   useEffect(() => {
-    async function loadCatalogs() {
+    async function load() {
       try {
-        const [tiposData, ubicacionesData] = await Promise.all([getTiposChasis(), getUbicaciones()]);
+        const [tiposData, ubicacionesData, chasis] = await Promise.all([
+          getTiposChasis(),
+          getUbicaciones(),
+          getChasisById(Number(id)),
+        ]);
+
         setTipos(tiposData);
         setUbicaciones(ubicacionesData);
+
+        setTipoChasisId(String(chasis.tipo_chasis_id ?? ''));
+        setNombre(chasis.nombre ?? '');
+        setUbicacionId(chasis.ubicacion_id ? String(chasis.ubicacion_id) : '');
+        setCategoria(chasis.categoria ?? '');
+        setNumero(chasis.numero ?? '');
+        setPlaca(chasis.placa ?? '');
+        setAveriaPatas(Boolean(chasis.averia_patas));
+        setAveriaLuces(Boolean(chasis.averia_luces));
+        setAveriaManoplas(Boolean(chasis.averia_manoplas));
+        setAveriaMangueras(Boolean(chasis.averia_mangueras));
+        setAveriaLlantas(Boolean(chasis.averia_llantas));
       } catch (err) {
-        setApiError(err as ApiError);
+        setError((err as ApiError).message);
       } finally {
-        setLoadingCatalogs(false);
+        setLoading(false);
       }
     }
 
-    loadCatalogs();
-  }, []);
+    load();
+  }, [id]);
 
-  const payload = useMemo<ChasisPayload>(
+  const payload = useMemo<Partial<ChasisPayload>>(
     () => ({
       tipo_chasis_id: Number(tipoChasisId),
       nombre,
@@ -94,16 +107,19 @@ export default function NewChasisScreen() {
 
   async function handleSave() {
     setSaving(true);
-    setApiError(null);
-
+    setError(null);
     try {
-      const result = await createChasis(payload);
-      router.replace(`/chasis/${result.id}`);
+      await updateChasis(Number(id), payload);
+      router.replace(`/chasis/${id}`);
     } catch (err) {
-      setApiError(err as ApiError);
+      setError((err as ApiError).message);
     } finally {
       setSaving(false);
     }
+  }
+
+  if (loading) {
+    return <ActivityIndicator size="large" color="#0284c7" style={{ marginTop: 30 }} />;
   }
 
   const selectedTipo = tipos.find((item) => item.id === Number(tipoChasisId));
@@ -111,32 +127,19 @@ export default function NewChasisScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {loadingCatalogs ? <ActivityIndicator size="large" color="#0284c7" /> : null}
+      {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Campos requeridos</Text>
+        <Text style={styles.sectionTitle}>Campos</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="nombre"
-          value={nombre}
-          onChangeText={setNombre}
-        />
+        <TextInput style={styles.input} placeholder="nombre" value={nombre} onChangeText={setNombre} />
+
         <Pressable style={styles.selector} onPress={() => setTipoModalVisible(true)}>
           <Text style={styles.selectorText}>
             {selectedTipo ? `${selectedTipo.nombre} (id ${selectedTipo.id})` : 'Selecciona tipo de chasis'}
           </Text>
         </Pressable>
-        {!!pickFieldError(apiError ?? undefined, 'tipo_chasis_id') ? (
-          <Text style={styles.error}>{pickFieldError(apiError ?? undefined, 'tipo_chasis_id')}</Text>
-        ) : null}
-        {!!pickFieldError(apiError ?? undefined, 'nombre') ? (
-          <Text style={styles.error}>{pickFieldError(apiError ?? undefined, 'nombre')}</Text>
-        ) : null}
-      </View>
 
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Opcionales</Text>
         <Pressable style={styles.selector} onPress={() => setUbicModalVisible(true)}>
           <Text style={styles.selectorText}>
             {selectedUbicacion
@@ -175,10 +178,8 @@ export default function NewChasisScreen() {
         </View>
       </View>
 
-      {apiError?.message ? <Text style={styles.error}>{apiError.message}</Text> : null}
-
       <Pressable style={styles.button} onPress={handleSave} disabled={saving}>
-        {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Guardar</Text>}
+        {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Guardar cambios</Text>}
       </Pressable>
 
       <Modal visible={tipoModalVisible} transparent animationType="slide">
@@ -270,10 +271,6 @@ const styles = StyleSheet.create({
   },
   selectorText: {
     color: '#0f172a',
-  },
-  help: {
-    fontSize: 12,
-    color: '#64748b',
   },
   switchRow: {
     flexDirection: 'row',

@@ -22,6 +22,10 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="chasis/new" options={{ title: 'Nuevo chasis' }} />
           <Stack.Screen name="chasis/[id]" options={{ title: 'Detalle de chasis' }} />
+          <Stack.Screen name="chasis/[id]/edit" options={{ title: 'Editar chasis' }} />
+          <Stack.Screen name="catalogos/tipos" options={{ title: 'Tipos de chasis' }} />
+          <Stack.Screen name="catalogos/ubicaciones" options={{ title: 'Ubicaciones' }} />
+          <Stack.Screen name="catalogos/estados" options={{ title: 'Estados' }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>
         <StatusBar style="auto" />

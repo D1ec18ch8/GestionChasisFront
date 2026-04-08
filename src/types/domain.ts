@@ -31,17 +31,49 @@ export type TipoChasis = {
   [key: string]: unknown;
 };
 
+export type TipoChasisPayload = {
+  nombre: string;
+};
+
 export type Ubicacion = {
   id: number;
   nombre: string;
+  codigo?: string;
   razon_social?: string;
+  aduana?: string;
+  direccion?: string;
+  telefono?: string;
+  fax?: string;
+  email?: string;
   [key: string]: unknown;
+};
+
+export type UbicacionPayload = {
+  nombre: string;
+  codigo: string;
+  razon_social?: string;
+  aduana?: string;
+  direccion?: string;
+  telefono?: string;
+  fax?: string;
+  email?: string;
 };
 
 export type Estado = {
   id: number;
   nombre: string;
   slug?: string;
+  [key: string]: unknown;
+};
+
+export type EstadoPayload = {
+  nombre: string;
+  slug: string;
+};
+
+export type PingResponse = {
+  message?: string;
+  status?: string;
   [key: string]: unknown;
 };
 

@@ -16,6 +16,15 @@ export type HistorialMovimiento = {
   [key: string]: unknown;
 };
 
+export type HistorialGeneral = {
+  id?: number;
+  chasis_id?: number;
+  tipo?: string;
+  descripcion?: string;
+  created_at?: string;
+  [key: string]: unknown;
+};
+
 export type HistorialFilters = {
   per_page?: number;
   chasis_id?: number;

@@ -98,6 +98,10 @@ export default function ChasisDetailScreen() {
         />
       </View>
 
+      <Pressable style={styles.editButton} onPress={() => router.push(`/chasis/${id}/edit`)}>
+        <Text style={styles.editText}>Editar chasis</Text>
+      </Pressable>
+
       <Pressable style={styles.deleteButton} onPress={handleDelete} disabled={deleting}>
         {deleting ? <ActivityIndicator color="#fff" /> : <Text style={styles.deleteText}>Eliminar</Text>}
       </Pressable>
@@ -140,6 +144,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     marginBottom: 18,
+  },
+  editButton: {
+    backgroundColor: '#0284c7',
+    borderRadius: 10,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  editText: {
+    color: '#fff',
+    fontWeight: '700',
   },
   deleteText: {
     color: '#fff',
