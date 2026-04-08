@@ -29,4 +29,5 @@ export type HistorialFilters = {
   per_page?: number;
   chasis_id?: number;
   accion?: 'creacion' | 'actualizacion' | 'eliminacion';
+  placa?: string;
 };

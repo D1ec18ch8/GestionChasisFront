@@ -33,7 +33,6 @@ export default function EditChasisScreen() {
   const [tipoChasisId, setTipoChasisId] = useState('');
   const [nombre, setNombre] = useState('');
   const [ubicacionId, setUbicacionId] = useState('');
-  const [categoria, setCategoria] = useState('');
   const [numero, setNumero] = useState('');
   const [placa, setPlaca] = useState('');
 
@@ -58,7 +57,6 @@ export default function EditChasisScreen() {
         setTipoChasisId(String(chasis.tipo_chasis_id ?? ''));
         setNombre(chasis.nombre ?? '');
         setUbicacionId(chasis.ubicacion_id ? String(chasis.ubicacion_id) : '');
-        setCategoria(chasis.categoria ?? '');
         setNumero(chasis.numero ?? '');
         setPlaca(chasis.placa ?? '');
         setAveriaPatas(Boolean(chasis.averia_patas));
@@ -80,10 +78,9 @@ export default function EditChasisScreen() {
     () => ({
       tipo_chasis_id: Number(tipoChasisId),
       nombre,
+      placa,
       ubicacion_id: ubicacionId ? Number(ubicacionId) : undefined,
-      categoria: categoria || undefined,
       numero: numero || undefined,
-      placa: placa || undefined,
       averia_patas: averiaPatas,
       averia_luces: averiaLuces,
       averia_manoplas: averiaManoplas,
@@ -93,10 +90,9 @@ export default function EditChasisScreen() {
     [
       tipoChasisId,
       nombre,
-      ubicacionId,
-      categoria,
-      numero,
       placa,
+      ubicacionId,
+      numero,
       averiaPatas,
       averiaLuces,
       averiaManoplas,
@@ -136,19 +132,18 @@ export default function EditChasisScreen() {
 
         <Pressable style={styles.selector} onPress={() => setTipoModalVisible(true)}>
           <Text style={styles.selectorText}>
-            {selectedTipo ? `${selectedTipo.nombre} (id ${selectedTipo.id})` : 'Selecciona tipo de chasis'}
+            {selectedTipo ? selectedTipo.nombre : 'Selecciona tipo de chasis'}
           </Text>
         </Pressable>
 
         <Pressable style={styles.selector} onPress={() => setUbicModalVisible(true)}>
           <Text style={styles.selectorText}>
             {selectedUbicacion
-              ? `${selectedUbicacion.nombre} (id ${selectedUbicacion.id})`
+              ? selectedUbicacion.nombre
               : 'Selecciona ubicacion'}
           </Text>
         </Pressable>
 
-        <TextInput style={styles.input} placeholder="categoria" value={categoria} onChangeText={setCategoria} />
         <TextInput style={styles.input} placeholder="numero" value={numero} onChangeText={setNumero} />
         <TextInput style={styles.input} placeholder="placa" value={placa} onChangeText={setPlaca} />
       </View>

@@ -1,15 +1,15 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    View,
 } from 'react-native';
 
 import { getTiposChasis, getUbicaciones } from '@/src/services/catalogs.service';
@@ -41,7 +41,6 @@ export default function NewChasisScreen() {
   const [tipoChasisId, setTipoChasisId] = useState('');
   const [nombre, setNombre] = useState('');
   const [ubicacionId, setUbicacionId] = useState('');
-  const [categoria, setCategoria] = useState('');
   const [numero, setNumero] = useState('');
   const [placa, setPlaca] = useState('');
 
@@ -71,10 +70,9 @@ export default function NewChasisScreen() {
     () => ({
       tipo_chasis_id: Number(tipoChasisId),
       nombre,
+      placa,
       ubicacion_id: ubicacionId ? Number(ubicacionId) : undefined,
-      categoria: categoria || undefined,
       numero: numero || undefined,
-      placa: placa || undefined,
       averia_patas: averiaPatas,
       averia_luces: averiaLuces,
       averia_manoplas: averiaManoplas,
@@ -84,10 +82,9 @@ export default function NewChasisScreen() {
     [
       tipoChasisId,
       nombre,
-      ubicacionId,
-      categoria,
-      numero,
       placa,
+      ubicacionId,
+      numero,
       averiaPatas,
       averiaLuces,
       averiaManoplas,
@@ -139,6 +136,20 @@ export default function NewChasisScreen() {
           value={nombre}
           onChangeText={setNombre}
         />
+        {!!pickFieldError(apiError ?? undefined, 'nombre') ? (
+          <Text style={styles.error}>{pickFieldError(apiError ?? undefined, 'nombre')}</Text>
+        ) : null}
+
+        <TextInput
+          style={styles.input}
+          placeholder="placa (obligatorio)"
+          value={placa}
+          onChangeText={setPlaca}
+        />
+        {!!pickFieldError(apiError ?? undefined, 'placa') ? (
+          <Text style={styles.error}>{pickFieldError(apiError ?? undefined, 'placa')}</Text>
+        ) : null}
+
         <Pressable style={styles.selector} onPress={() => setTipoModalVisible(true)}>
           <Text style={styles.selectorText}>
             {selectedTipo ? selectedTipo.nombre : 'Selecciona tipo de chasis'}
@@ -146,9 +157,6 @@ export default function NewChasisScreen() {
         </Pressable>
         {!!pickFieldError(apiError ?? undefined, 'tipo_chasis_id') ? (
           <Text style={styles.error}>{pickFieldError(apiError ?? undefined, 'tipo_chasis_id')}</Text>
-        ) : null}
-        {!!pickFieldError(apiError ?? undefined, 'nombre') ? (
-          <Text style={styles.error}>{pickFieldError(apiError ?? undefined, 'nombre')}</Text>
         ) : null}
       </View>
 
@@ -162,9 +170,7 @@ export default function NewChasisScreen() {
           </Text>
         </Pressable>
 
-        <TextInput style={styles.input} placeholder="categoria" value={categoria} onChangeText={setCategoria} />
         <TextInput style={styles.input} placeholder="numero" value={numero} onChangeText={setNumero} />
-        <TextInput style={styles.input} placeholder="placa" value={placa} onChangeText={setPlaca} />
       </View>
 
       <View style={styles.card}>

@@ -9,12 +9,28 @@ export const http = axios.create({
   timeout: 15000,
 });
 
+function getClientTimeZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return undefined;
+  }
+}
+
 http.interceptors.request.use(async (config) => {
   const token = await getToken();
+  const timeZone = getClientTimeZone();
+  const utcOffsetMinutes = -new Date().getTimezoneOffset();
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  if (timeZone) {
+    config.headers['X-Timezone'] = timeZone;
+  }
+
+  config.headers['X-UTC-Offset-Minutes'] = String(utcOffsetMinutes);
 
   return config;
 });
@@ -25,12 +41,17 @@ http.interceptors.response.use(
     const isTimeout = error.code === 'ECONNABORTED';
     const isNetworkError = !error.response;
     const status = error.response?.status ?? 500;
-    const message = isTimeout
-      ? 'La solicitud tardo demasiado en responder.'
-      : isNetworkError
-        ? `No se pudo conectar con la API (${API_URL}). Verifica que el backend este activo y la URL configurada.`
-        : (error.response?.data?.message ??
-          (status === 401 ? 'Sesion expirada o no autorizada.' : 'Ocurrio un error inesperado.'));
+    
+    let message = '';
+    if (isTimeout) {
+      message = 'La solicitud tardo demasiado en responder.';
+    } else if (isNetworkError) {
+      message = `No se pudo conectar con la API (${API_URL}). Verifica que el backend este activo y la URL configurada.`;
+    } else if (status === 401) {
+      message = 'Sesión expirada. Por favor inicia sesión nuevamente.';
+    } else {
+      message = error.response?.data?.message ?? 'Ocurrio un error inesperado.';
+    }
 
     if (status === 401) {
       await clearToken();

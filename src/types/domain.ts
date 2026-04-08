@@ -87,9 +87,8 @@ export type EquipamientoMalEstado =
 export type Chasis = {
   id: number;
   nombre: string;
-  categoria?: string;
+  placa: string;
   numero?: string;
-  placa?: string;
   tipo_chasis_id: number;
   ubicacion_id?: number;
   estado_actual?: string;
@@ -107,10 +106,9 @@ export type Chasis = {
 export type ChasisPayload = {
   tipo_chasis_id: number;
   nombre: string;
+  placa: string;
   ubicacion_id?: number;
-  categoria?: string;
   numero?: string;
-  placa?: string;
   averia_patas?: boolean;
   averia_luces?: boolean;
   averia_manoplas?: boolean;

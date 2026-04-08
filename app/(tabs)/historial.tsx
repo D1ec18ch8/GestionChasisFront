@@ -12,10 +12,9 @@ import {
 } from 'react-native';
 
 import { getUbicaciones } from '@/src/services/catalogs.service';
-import { getChasis } from '@/src/services/chasis.service';
 import {
   downloadGeneralMovimientosPdf,
-  downloadHistorialChasisPdf,
+  downloadMovimientosPdf,
   getHistorialAcciones,
   getHistorialMovimientos,
 } from '@/src/services/history.service';
@@ -40,9 +39,27 @@ function HistoryCard({ title, rows }: { title: string; rows: string[] }) {
   );
 }
 
+function formatDate(dateStr: string | undefined) {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    return date.toLocaleString('es-ES', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
 export default function HistorialScreen() {
   const [rows, setRows] = useState<string[]>([]);
   const [mode, setMode] = useState('acciones-global');
+  const [selectedMode, setSelectedMode] = useState('acciones-global');
   const [placaInput, setPlacaInput] = useState('');
   const [ubicaciones, setUbicaciones] = useState<Ubicacion[]>([]);
 
@@ -53,93 +70,71 @@ export default function HistorialScreen() {
   const mapAcciones = useCallback((data: HistorialAccion[]) => {
     return data.map(
       (item) =>
-        `${item.id} | chasis:${item.chasis_id ?? 'N/A'} | ${item.accion ?? 'sin-accion'} | ${item.created_at ?? ''}`,
+        `${item.id} | chasis:${item.chasis_id ?? 'N/A'} | ${item.accion ?? 'sin-accion'} | ${formatDate(item.created_at)}`,
     );
   }, []);
 
   const mapMovimientos = useCallback((data: HistorialMovimiento[]) => {
-    function resolveLocationFromId(
-      item: HistorialMovimiento,
-      idCandidates: string[],
-    ) {
-      for (const key of idCandidates) {
-        const rawId = (item as Record<string, unknown>)[key];
-        const id =
-          typeof rawId === 'number'
-            ? rawId
-            : typeof rawId === 'string' && rawId.trim()
-              ? Number(rawId)
-              : NaN;
+    return data.map((item) => {
+      // Intenta obtener ubicaciones desde detalle (JSON del backend)
+      const detalle = (item as Record<string, unknown>).detalle as Record<string, unknown> | undefined;
+      
+      let origen = 'N/A';
+      let destino = 'N/A';
 
-        if (!Number.isNaN(id)) {
-          const found = ubicaciones.find((ubic) => ubic.id === id);
-          return found?.nombre ?? `ID ${id}`;
+      if (detalle) {
+        // Si existe el objeto detalle, obtén origen y destino
+        if (typeof detalle.origen === 'string' && detalle.origen.trim()) {
+          origen = detalle.origen;
+        }
+        if (typeof detalle.destino === 'string' && detalle.destino.trim()) {
+          destino = detalle.destino;
         }
       }
 
-      return null;
-    }
+      // Si detalle no tiene los valores, intenta buscar por IDs en item
+      if (origen === 'N/A') {
+        for (const key of ['origen_id', 'ubicacion_origen_id', 'ubicacion_anterior_id', 'from_id']) {
+          const rawId = (item as Record<string, unknown>)[key];
+          const id =
+            typeof rawId === 'number'
+              ? rawId
+              : typeof rawId === 'string' && rawId.trim()
+                ? Number(rawId)
+                : NaN;
 
-    function resolveLocation(
-      item: HistorialMovimiento,
-      candidates: string[],
-    ) {
-      for (const key of candidates) {
-        const value = (item as Record<string, unknown>)[key];
-
-        if (typeof value === 'string' && value.trim()) {
-          return value;
-        }
-
-        if (value && typeof value === 'object') {
-          const obj = value as Record<string, unknown>;
-          if (typeof obj.nombre === 'string' && obj.nombre.trim()) {
-            return obj.nombre;
+          if (!Number.isNaN(id)) {
+            const found = ubicaciones.find((ubic) => ubic.id === id);
+            if (found) {
+              origen = found.nombre;
+              break;
+            }
           }
         }
       }
 
-      return 'N/A';
-    }
+      if (destino === 'N/A') {
+        for (const key of ['destino_id', 'ubicacion_destino_id', 'ubicacion_nueva_id', 'to_id']) {
+          const rawId = (item as Record<string, unknown>)[key];
+          const id =
+            typeof rawId === 'number'
+              ? rawId
+              : typeof rawId === 'string' && rawId.trim()
+                ? Number(rawId)
+                : NaN;
 
-    return data.map(
-      (item) => {
-        const origenFromText = resolveLocation(item, [
-          'origen',
-          'ubicacion_origen',
-          'origen_nombre',
-          'ubicacion_origen_nombre',
-          'ubicacion_anterior',
-          'from',
-        ]);
-        const origenFromId = resolveLocationFromId(item, [
-          'origen_id',
-          'ubicacion_origen_id',
-          'ubicacion_anterior_id',
-          'from_id',
-        ]);
+          if (!Number.isNaN(id)) {
+            const found = ubicaciones.find((ubic) => ubic.id === id);
+            if (found) {
+              destino = found.nombre;
+              break;
+            }
+          }
+        }
+      }
 
-        const destinoFromText = resolveLocation(item, [
-          'destino',
-          'ubicacion_destino',
-          'destino_nombre',
-          'ubicacion_destino_nombre',
-          'ubicacion_nueva',
-          'to',
-        ]);
-        const destinoFromId = resolveLocationFromId(item, [
-          'destino_id',
-          'ubicacion_destino_id',
-          'ubicacion_nueva_id',
-          'to_id',
-        ]);
-
-        const origen = origenFromText !== 'N/A' ? origenFromText : (origenFromId ?? 'N/A');
-        const destino = destinoFromText !== 'N/A' ? destinoFromText : (destinoFromId ?? 'N/A');
-
-        return `${item.id} | chasis:${item.chasis_id ?? 'N/A'} | ${origen} -> ${destino} | ${item.created_at ?? ''}`;
-      },
-    );
+      return `${item.id} | chasis:${item.chasis_id ?? 'N/A'} | ${origen} -> ${destino} | ${formatDate(item.created_at)}`;
+    });
   }, [ubicaciones]);
 
   function downloadArrayBufferAsPdf(buffer: ArrayBuffer, fileName: string) {
@@ -177,19 +172,7 @@ export default function HistorialScreen() {
           } as ApiError;
         }
 
-        const result = await getChasis({ search: placa, per_page: 100 });
-        const matched = result.data.find(
-          (item) => (item.placa ?? '').toLowerCase().trim() === placa.toLowerCase(),
-        );
-
-        if (!matched) {
-          throw {
-            status: 404,
-            message: `No se encontro chasis con placa ${placa}.`,
-          } as ApiError;
-        }
-
-        const data = await downloadHistorialChasisPdf(matched.id);
+        const data = await downloadMovimientosPdf(placa);
         downloadArrayBufferAsPdf(data, `historial-movimientos-${placa}.pdf`);
       }
     } catch (err) {
@@ -224,10 +207,7 @@ export default function HistorialScreen() {
   }, [mapAcciones, mapMovimientos]);
 
   useEffect(() => {
-    loadHistory('acciones-global');
-  }, [loadHistory]);
-
-  useEffect(() => {
+    // Cargar ubicaciones primero
     async function loadUbicaciones() {
       try {
         const data = await getUbicaciones();
@@ -240,6 +220,37 @@ export default function HistorialScreen() {
     loadUbicaciones();
   }, []);
 
+  useEffect(() => {
+    // Carga inicial al montar el componente solo una vez
+    let isMounted = true;
+    
+    (async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const data = await getHistorialAcciones({ per_page: 30 });
+        if (isMounted) {
+          setRows(mapAcciones(data.data));
+          setMode('acciones-global');
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError((err as ApiError).message);
+          setRows([]);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [mapAcciones]);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {loading ? <ActivityIndicator size="large" color="#0284c7" /> : null}
@@ -248,17 +259,29 @@ export default function HistorialScreen() {
       <View style={styles.block}>
         <Text style={styles.blockTitle}>Consulta de historial</Text>
         <View style={styles.row}>
-          <Pressable style={styles.modeButton} onPress={() => setMode('acciones-global')}>
-            <Text style={styles.modeText}>Acciones</Text>
+          <Pressable
+            style={[
+              styles.modeButton,
+              selectedMode === 'acciones-global' && styles.modeButtonActive,
+            ]}
+            onPress={() => setSelectedMode('acciones-global')}>
+            <Text style={[styles.modeText, selectedMode === 'acciones-global' && styles.modeTextActive]}>
+              Acciones
+            </Text>
           </Pressable>
-          <Pressable style={styles.modeButton} onPress={() => setMode('movimientos-global')}>
-            <Text style={styles.modeText}>Movimientos</Text>
+          <Pressable
+            style={[
+              styles.modeButton,
+              selectedMode === 'movimientos-global' && styles.modeButtonActive,
+            ]}
+            onPress={() => setSelectedMode('movimientos-global')}>
+            <Text style={[styles.modeText, selectedMode === 'movimientos-global' && styles.modeTextActive]}>
+              Movimientos
+            </Text>
           </Pressable>
         </View>
 
-        <Pressable
-          style={styles.refreshButton}
-          onPress={() => loadHistory(mode)}>
+        <Pressable style={styles.refreshButton} onPress={() => loadHistory(selectedMode)}>
           <Text style={styles.refreshText}>Consultar</Text>
         </Pressable>
       </View>
@@ -267,9 +290,7 @@ export default function HistorialScreen() {
 
       <View style={styles.block}>
         <Text style={styles.blockTitle}>Exportacion PDF de movimientos</Text>
-        <Text style={styles.helper}>
-          Usa placa para generar el PDF de un solo chasis.
-        </Text>
+        <Text style={styles.helper}>Usa placa para generar el PDF de un solo chasis.</Text>
         <TextInput
           style={styles.input}
           value={placaInput}
@@ -323,10 +344,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
+  modeButtonActive: {
+    backgroundColor: '#0284c7',
+  },
   modeText: {
     color: '#0f172a',
     fontWeight: '600',
     fontSize: 12,
+  },
+  modeTextActive: {
+    color: '#fff',
   },
   refreshButton: {
     backgroundColor: '#0284c7',

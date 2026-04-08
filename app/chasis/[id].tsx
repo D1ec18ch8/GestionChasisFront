@@ -103,7 +103,6 @@ export default function ChasisDetailScreen() {
         <Field label="Estado actual" value={data.estado_actual} />
         <Field label="Tipo chasis" value={tipoNombre} />
         <Field label="Ubicacion" value={ubicacionNombre} />
-        <Field label="Categoria" value={data.categoria} />
         <Field label="Numero" value={data.numero} />
         <Field label="Placa" value={data.placa} />
         <Field
