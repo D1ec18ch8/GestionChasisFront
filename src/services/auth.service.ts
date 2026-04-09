@@ -1,5 +1,19 @@
 import { http } from '@/src/lib/http';
-import { AuthLoginPayload, AuthRegisterPayload, AuthResponse, User } from '@/src/types/domain';
+import {
+    AuthLoginPayload,
+    AuthMeResponse,
+    AuthRegisterPayload,
+    AuthResponse,
+    User,
+} from '@/src/types/domain';
+
+function extractUser(payload: User | AuthMeResponse | AuthResponse) {
+  if ('user' in payload && payload.user) {
+    return payload.user;
+  }
+
+  return payload as User;
+}
 
 export async function login(payload: AuthLoginPayload) {
   const { data } = await http.post<AuthResponse>('/auth/login', payload);
@@ -16,11 +30,11 @@ export async function logout() {
 }
 
 export async function me() {
-  const { data } = await http.get<User>('/auth/me');
-  return data;
+  const { data } = await http.get<User | AuthMeResponse>('/auth/me');
+  return extractUser(data);
 }
 
 export async function updateProfile(payload: Partial<User>) {
-  const { data } = await http.put<User>('/auth/profile', payload);
-  return data;
+  const { data } = await http.put<User | AuthResponse>('/auth/profile', payload);
+  return extractUser(data);
 }

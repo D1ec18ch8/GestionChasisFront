@@ -67,10 +67,25 @@ export default function HistorialScreen() {
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  function getChasisNombre(item: Record<string, unknown>) {
+    const chasisObj = item.chasis as Record<string, unknown> | undefined;
+    if (chasisObj) {
+      if (typeof chasisObj.nombre === 'string' && chasisObj.nombre.trim()) {
+        return chasisObj.nombre;
+      }
+
+      if (typeof chasisObj.placa === 'string' && chasisObj.placa.trim()) {
+        return chasisObj.placa;
+      }
+    }
+
+    return `id:${item.chasis_id ?? 'N/A'}`;
+  }
+
   const mapAcciones = useCallback((data: HistorialAccion[]) => {
     return data.map(
       (item) =>
-        `${item.id} | chasis:${item.chasis_id ?? 'N/A'} | ${item.accion ?? 'sin-accion'} | ${formatDate(item.created_at)}`,
+        `${item.id} | chasis:${getChasisNombre(item as Record<string, unknown>)} | ${item.accion ?? 'sin-accion'} | ${formatDate(item.created_at)}`,
     );
   }, []);
 
@@ -133,7 +148,7 @@ export default function HistorialScreen() {
         }
       }
 
-      return `${item.id} | chasis:${item.chasis_id ?? 'N/A'} | ${origen} -> ${destino} | ${formatDate(item.created_at)}`;
+      return `${item.id} | chasis:${getChasisNombre(item as Record<string, unknown>)} | ${origen} -> ${destino} | ${formatDate(item.created_at)}`;
     });
   }, [ubicaciones]);
 
@@ -253,6 +268,12 @@ export default function HistorialScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.hero}>
+        <Text style={styles.kicker}>Auditoria</Text>
+        <Text style={styles.title}>Historial</Text>
+        <Text style={styles.subtitle}>Consulta acciones y movimientos con exportacion PDF lista para revisar o compartir.</Text>
+      </View>
+
       {loading ? <ActivityIndicator size="large" color="#0284c7" /> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -313,17 +334,49 @@ export default function HistorialScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#0f172a',
   },
   content: {
-    padding: 12,
+    padding: 16,
     gap: 12,
   },
+  hero: {
+    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+    borderRadius: 24,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.18)',
+  },
+  kicker: {
+    color: '#38bdf8',
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  title: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: '800',
+  },
+  subtitle: {
+    color: '#cbd5e1',
+    marginTop: 6,
+    lineHeight: 20,
+  },
   block: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
+    borderRadius: 20,
+    padding: 14,
     gap: 6,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#020617',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
   row: {
     flexDirection: 'row',
@@ -382,7 +435,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   pdfButton: {
-    backgroundColor: '#334155',
+    backgroundColor: '#0f172a',
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 12,

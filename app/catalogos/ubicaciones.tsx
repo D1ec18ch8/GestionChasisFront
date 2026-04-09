@@ -2,8 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     FlatList,
+    Modal,
     Pressable,
     RefreshControl,
+    ScrollView,
     StyleSheet,
     Text,
     TextInput,
@@ -141,40 +143,6 @@ export default function UbicacionesCatalogScreen() {
           }}>
           <Text style={styles.buttonText}>Nuevo</Text>
         </Pressable>
-
-        {showForm ? (
-          <>
-            <TextInput value={nombre} onChangeText={setNombre} placeholder="Nombre" style={styles.input} />
-            <TextInput value={codigo} onChangeText={setCodigo} placeholder="Codigo" style={styles.input} />
-            <TextInput value={razonSocial} onChangeText={setRazonSocial} placeholder="Razon social" style={styles.input} />
-            <TextInput value={aduana} onChangeText={setAduana} placeholder="Aduana" style={styles.input} />
-            <TextInput value={direccion} onChangeText={setDireccion} placeholder="Direccion" style={styles.input} />
-            <TextInput value={telefono} onChangeText={setTelefono} placeholder="Telefono" style={styles.input} />
-            <TextInput value={fax} onChangeText={setFax} placeholder="Fax" style={styles.input} />
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Email"
-              style={styles.input}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-
-            <View style={styles.row}>
-              <Pressable style={styles.button} onPress={saveItem} disabled={saving}>
-                <Text style={styles.buttonText}>{editId ? 'Actualizar' : 'Crear'}</Text>
-              </Pressable>
-              <Pressable
-                style={styles.secondaryButton}
-                onPress={() => {
-                  resetForm();
-                  setShowForm(false);
-                }}>
-                <Text style={styles.secondaryButtonText}>Cancelar</Text>
-              </Pressable>
-            </View>
-          </>
-        ) : null}
       </View>
 
       {loading ? <ActivityIndicator size="large" color="#0284c7" style={styles.loader} /> : null}
@@ -217,6 +185,48 @@ export default function UbicacionesCatalogScreen() {
           </View>
         )}
       />
+
+      <Modal visible={showForm} transparent animationType="slide" onRequestClose={() => setShowForm(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>{editId ? 'Editar ubicacion' : 'Nueva ubicacion'}</Text>
+
+            <ScrollView style={styles.modalList}>
+              <View style={styles.form}>
+                <TextInput value={nombre} onChangeText={setNombre} placeholder="Nombre" style={styles.input} />
+                <TextInput value={codigo} onChangeText={setCodigo} placeholder="Codigo" style={styles.input} />
+                <TextInput value={razonSocial} onChangeText={setRazonSocial} placeholder="Razon social" style={styles.input} />
+                <TextInput value={aduana} onChangeText={setAduana} placeholder="Aduana" style={styles.input} />
+                <TextInput value={direccion} onChangeText={setDireccion} placeholder="Direccion" style={styles.input} />
+                <TextInput value={telefono} onChangeText={setTelefono} placeholder="Telefono" style={styles.input} />
+                <TextInput value={fax} onChangeText={setFax} placeholder="Fax" style={styles.input} />
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Email"
+                  style={styles.input}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+            </ScrollView>
+
+            <View style={styles.row}>
+              <Pressable style={styles.button} onPress={saveItem} disabled={saving}>
+                <Text style={styles.buttonText}>{editId ? 'Actualizar' : 'Crear'}</Text>
+              </Pressable>
+              <Pressable
+                style={styles.secondaryButton}
+                onPress={() => {
+                  resetForm();
+                  setShowForm(false);
+                }}>
+                <Text style={styles.secondaryButtonText}>Cancelar</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -269,4 +279,26 @@ const styles = StyleSheet.create({
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 12, gap: 6 },
   cardTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
   cardSub: { color: '#475569' },
+  form: { gap: 8 },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    justifyContent: 'center',
+    padding: 18,
+  },
+  modalCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 12,
+    gap: 10,
+    maxHeight: '85%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  modalList: {
+    maxHeight: 420,
+  },
 });

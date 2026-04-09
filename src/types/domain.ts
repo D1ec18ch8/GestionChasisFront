@@ -1,9 +1,29 @@
 export type User = {
   id: number;
-  name: string;
+  nombre?: string;
+  name?: string;
   email: string;
+  rol?: string;
   activo?: boolean;
   [key: string]: unknown;
+};
+
+export type Usuario = {
+  id: number;
+  nombre: string;
+  email: string;
+  rol?: string;
+  activo?: boolean;
+  [key: string]: unknown;
+};
+
+export type UsuarioPayload = {
+  nombre: string;
+  email: string;
+  rol?: string;
+  activo?: boolean;
+  password?: string;
+  password_confirmation?: string;
 };
 
 export type AuthLoginPayload = {
@@ -23,6 +43,10 @@ export type AuthResponse = {
   token?: string;
   user?: User;
   message?: string;
+};
+
+export type AuthMeResponse = {
+  user?: User;
 };
 
 export type TipoChasis = {

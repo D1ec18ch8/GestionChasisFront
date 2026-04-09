@@ -28,7 +28,6 @@ export default function EditChasisScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const [tipoModalVisible, setTipoModalVisible] = useState(false);
-  const [ubicModalVisible, setUbicModalVisible] = useState(false);
 
   const [tipoChasisId, setTipoChasisId] = useState('');
   const [nombre, setNombre] = useState('');
@@ -79,7 +78,6 @@ export default function EditChasisScreen() {
       tipo_chasis_id: Number(tipoChasisId),
       nombre,
       placa,
-      ubicacion_id: ubicacionId ? Number(ubicacionId) : undefined,
       numero: numero || undefined,
       averia_patas: averiaPatas,
       averia_luces: averiaLuces,
@@ -91,7 +89,6 @@ export default function EditChasisScreen() {
       tipoChasisId,
       nombre,
       placa,
-      ubicacionId,
       numero,
       averiaPatas,
       averiaLuces,
@@ -136,13 +133,10 @@ export default function EditChasisScreen() {
           </Text>
         </Pressable>
 
-        <Pressable style={styles.selector} onPress={() => setUbicModalVisible(true)}>
-          <Text style={styles.selectorText}>
-            {selectedUbicacion
-              ? selectedUbicacion.nombre
-              : 'Selecciona ubicacion'}
-          </Text>
-        </Pressable>
+        <View style={styles.readOnlyBox}>
+          <Text style={styles.readOnlyLabel}>Ubicacion actual</Text>
+          <Text style={styles.readOnlyValue}>{selectedUbicacion?.nombre ?? 'Sin ubicacion'}</Text>
+        </View>
 
         <TextInput style={styles.input} placeholder="numero" value={numero} onChangeText={setNumero} />
         <TextInput style={styles.input} placeholder="placa" value={placa} onChangeText={setPlaca} />
@@ -201,29 +195,6 @@ export default function EditChasisScreen() {
         </View>
       </Modal>
 
-      <Modal visible={ubicModalVisible} transparent animationType="slide">
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Ubicacion</Text>
-            <ScrollView style={styles.modalList}>
-              {ubicaciones.map((item) => (
-                <Pressable
-                  key={item.id}
-                  style={styles.modalItem}
-                  onPress={() => {
-                    setUbicacionId(String(item.id));
-                    setUbicModalVisible(false);
-                  }}>
-                  <Text style={styles.modalItemText}>{item.nombre}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-            <Pressable style={styles.secondaryButton} onPress={() => setUbicModalVisible(false)}>
-              <Text style={styles.secondaryButtonText}>Cerrar</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
     </ScrollView>
   );
 }
@@ -266,6 +237,23 @@ const styles = StyleSheet.create({
   },
   selectorText: {
     color: '#0f172a',
+  },
+  readOnlyBox: {
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    backgroundColor: '#f8fafc',
+    gap: 4,
+  },
+  readOnlyLabel: {
+    fontSize: 12,
+    color: '#64748b',
+  },
+  readOnlyValue: {
+    color: '#0f172a',
+    fontWeight: '600',
   },
   switchRow: {
     flexDirection: 'row',

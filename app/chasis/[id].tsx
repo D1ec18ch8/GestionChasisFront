@@ -1,17 +1,19 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from 'react-native';
 
 import { getTiposChasis, getUbicaciones } from '@/src/services/catalogs.service';
-import { deleteChasis, getChasisById } from '@/src/services/chasis.service';
+import { deleteChasis, getChasisById, updateChasis } from '@/src/services/chasis.service';
 import { ApiError } from '@/src/types/api';
 import { Chasis, TipoChasis, Ubicacion } from '@/src/types/domain';
 
@@ -29,6 +31,10 @@ export default function ChasisDetailScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [moving, setMoving] = useState(false);
+  const [moveModalVisible, setMoveModalVisible] = useState(false);
+  const [ubicSearchInput, setUbicSearchInput] = useState('');
+  const [ubicSearchTerm, setUbicSearchTerm] = useState('');
   const [data, setData] = useState<Chasis | null>(null);
   const [tipos, setTipos] = useState<TipoChasis[]>([]);
   const [ubicaciones, setUbicaciones] = useState<Ubicacion[]>([]);
@@ -79,6 +85,31 @@ export default function ChasisDetailScreen() {
     ]);
   }
 
+  async function handleMoveLocation(newUbicacionId: number) {
+    if (!data) return;
+
+    setMoving(true);
+    setError(null);
+    try {
+      const updated = await updateChasis(data.id, { ubicacion_id: newUbicacionId });
+      setData(updated);
+      setMoveModalVisible(false);
+    } catch (err) {
+      setError((err as ApiError).message);
+    } finally {
+      setMoving(false);
+    }
+  }
+
+  const filteredUbicaciones = useMemo(() => {
+    const term = ubicSearchTerm.trim().toLowerCase();
+    if (!term) return ubicaciones;
+    return ubicaciones.filter((item) => {
+      const bag = `${item.nombre} ${item.codigo ?? ''}`.toLowerCase();
+      return bag.includes(term);
+    });
+  }, [ubicSearchTerm, ubicaciones]);
+
   if (loading) {
     return <ActivityIndicator size="large" color="#0284c7" style={{ marginTop: 30 }} />;
   }
@@ -115,9 +146,53 @@ export default function ChasisDetailScreen() {
         <Text style={styles.editText}>Editar chasis</Text>
       </Pressable>
 
+      <Pressable style={styles.moveButton} onPress={() => setMoveModalVisible(true)} disabled={moving}>
+        {moving ? <ActivityIndicator color="#fff" /> : <Text style={styles.editText}>Mover ubicacion</Text>}
+      </Pressable>
+
       <Pressable style={styles.deleteButton} onPress={handleDelete} disabled={deleting}>
         {deleting ? <ActivityIndicator color="#fff" /> : <Text style={styles.deleteText}>Eliminar</Text>}
       </Pressable>
+
+      <Modal visible={moveModalVisible} transparent animationType="slide">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Selecciona nueva ubicacion</Text>
+            <TextInput
+              value={ubicSearchInput}
+              onChangeText={setUbicSearchInput}
+              placeholder="Buscar ubicacion"
+              style={styles.input}
+            />
+            <View style={styles.modalActions}>
+              <Pressable style={styles.modalActionButton} onPress={() => setUbicSearchTerm(ubicSearchInput.trim())}>
+                <Text style={styles.modalActionText}>Filtrar</Text>
+              </Pressable>
+              <Pressable
+                style={styles.modalActionSecondaryButton}
+                onPress={() => {
+                  setUbicSearchInput('');
+                  setUbicSearchTerm('');
+                }}>
+                <Text style={styles.modalActionSecondaryText}>Limpiar</Text>
+              </Pressable>
+            </View>
+            <ScrollView style={styles.modalList}>
+              {filteredUbicaciones.map((item) => (
+                <Pressable
+                  key={item.id}
+                  style={styles.modalItem}
+                  onPress={() => handleMoveLocation(item.id)}>
+                  <Text style={styles.modalItemText}>{item.nombre}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+            <Pressable style={styles.cancelButton} onPress={() => setMoveModalVisible(false)}>
+              <Text style={styles.cancelButtonText}>Cancelar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -164,6 +239,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
   },
+  moveButton: {
+    backgroundColor: '#0ea5e9',
+    borderRadius: 10,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
   editText: {
     color: '#fff',
     fontWeight: '700',
@@ -181,5 +262,78 @@ const styles = StyleSheet.create({
     color: '#334155',
     marginTop: 20,
     textAlign: 'center',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    justifyContent: 'center',
+    padding: 18,
+  },
+  modalCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 12,
+    maxHeight: '70%',
+    gap: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  modalList: {
+    maxHeight: 280,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  modalActionButton: {
+    flex: 1,
+    backgroundColor: '#0284c7',
+    borderRadius: 10,
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  modalActionSecondaryButton: {
+    flex: 1,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 10,
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  modalActionText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  modalActionSecondaryText: {
+    color: '#0f172a',
+    fontWeight: '700',
+  },
+  modalItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  modalItemText: {
+    color: '#0f172a',
+  },
+  cancelButton: {
+    backgroundColor: '#e2e8f0',
+    borderRadius: 10,
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  cancelButtonText: {
+    color: '#0f172a',
+    fontWeight: '700',
   },
 });

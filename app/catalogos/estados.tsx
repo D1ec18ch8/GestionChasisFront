@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     FlatList,
+    Modal,
     Pressable,
     RefreshControl,
     StyleSheet,
@@ -123,29 +124,6 @@ export default function EstadosCatalogScreen() {
           }}>
           <Text style={styles.buttonText}>Nuevo</Text>
         </Pressable>
-
-        {showForm ? (
-          <>
-            <TextInput value={nombre} onChangeText={setNombre} placeholder="Nombre" style={styles.input} />
-            <TextInput value={slug} onChangeText={setSlug} placeholder="Slug" style={styles.input} />
-
-            <View style={styles.row}>
-              <Pressable style={styles.button} onPress={saveItem} disabled={saving}>
-                <Text style={styles.buttonText}>{editId ? 'Actualizar' : 'Crear'}</Text>
-              </Pressable>
-              <Pressable
-                style={styles.secondaryButton}
-                onPress={() => {
-                  setNombre('');
-                  setSlug('');
-                  setEditId(null);
-                  setShowForm(false);
-                }}>
-                <Text style={styles.secondaryButtonText}>Cancelar</Text>
-              </Pressable>
-            </View>
-          </>
-        ) : null}
       </View>
 
       {loading ? <ActivityIndicator size="large" color="#0284c7" style={styles.loader} /> : null}
@@ -183,6 +161,33 @@ export default function EstadosCatalogScreen() {
           </View>
         )}
       />
+
+      <Modal visible={showForm} transparent animationType="slide" onRequestClose={() => setShowForm(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>{editId ? 'Editar estado' : 'Nuevo estado'}</Text>
+
+            <TextInput value={nombre} onChangeText={setNombre} placeholder="Nombre" style={styles.input} />
+            <TextInput value={slug} onChangeText={setSlug} placeholder="Slug" style={styles.input} />
+
+            <View style={styles.row}>
+              <Pressable style={styles.button} onPress={saveItem} disabled={saving}>
+                <Text style={styles.buttonText}>{editId ? 'Actualizar' : 'Crear'}</Text>
+              </Pressable>
+              <Pressable
+                style={styles.secondaryButton}
+                onPress={() => {
+                  setNombre('');
+                  setSlug('');
+                  setEditId(null);
+                  setShowForm(false);
+                }}>
+                <Text style={styles.secondaryButtonText}>Cancelar</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -236,4 +241,21 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
   cardSub: { color: '#475569' },
   protected: { color: '#64748b', fontWeight: '600' },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    justifyContent: 'center',
+    padding: 18,
+  },
+  modalCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 12,
+    gap: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
 });
