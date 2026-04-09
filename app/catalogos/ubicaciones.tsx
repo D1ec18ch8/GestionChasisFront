@@ -136,12 +136,12 @@ export default function UbicacionesCatalogScreen() {
         />
 
         <Pressable
-          style={styles.button}
+          style={styles.newButton}
           onPress={() => {
             resetForm();
             setShowForm(true);
           }}>
-          <Text style={styles.buttonText}>Nuevo</Text>
+          <Text style={styles.newButtonText}>+ Nuevo</Text>
         </Pressable>
       </View>
 
@@ -271,6 +271,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: { color: '#fff', fontWeight: '700' },
+  newButton: {
+    backgroundColor: '#0284c7',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  newButtonText: { color: '#fff', fontWeight: '800', fontSize: 15 },
   secondaryButtonText: { color: '#0f172a', fontWeight: '700' },
   deleteButtonText: { color: '#fff', fontWeight: '700' },
   loader: { marginTop: 16 },

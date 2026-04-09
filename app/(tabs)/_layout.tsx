@@ -2,7 +2,6 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
 
-import { HapticTab } from '@/components/haptic-tab';
 import { useAuth } from '@/src/context/auth-context';
 
 export default function TabLayout() {
@@ -22,6 +21,9 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: '#0ea5e9',
         tabBarInactiveTintColor: '#64748b',
+        sceneStyle: {
+          backgroundColor: '#0f172a',
+        },
         headerShown: true,
         headerStyle: {
           backgroundColor: '#0f172a',
@@ -32,27 +34,22 @@ export default function TabLayout() {
         },
         headerShadowVisible: false,
         tabBarStyle: {
-          backgroundColor: 'rgba(15, 23, 42, 0.96)',
-          borderTopWidth: 0,
-          elevation: 12,
-          shadowColor: '#000',
-          shadowOpacity: 0.16,
-          shadowRadius: 18,
-          shadowOffset: { width: 0, height: -6 },
-          height: 66,
-          paddingBottom: 8,
-          paddingTop: 8,
+          backgroundColor: '#0f172a',
+          borderTopWidth: 1,
+          borderTopColor: '#1e293b',
+          height: 62,
+          paddingBottom: 6,
+          paddingTop: 6,
           borderRadius: 0,
+          position: 'relative',
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
         },
         tabBarItemStyle: {
-          borderRadius: 14,
-          marginHorizontal: 4,
+          borderRadius: 8,
         },
-        tabBarButton: HapticTab,
       }}>
       <Tabs.Screen
         name="index"

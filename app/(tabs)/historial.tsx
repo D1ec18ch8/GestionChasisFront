@@ -1,3 +1,6 @@
+import { encode } from 'base64-arraybuffer';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -152,21 +155,46 @@ export default function HistorialScreen() {
     });
   }, [ubicaciones]);
 
-  function downloadArrayBufferAsPdf(buffer: ArrayBuffer, fileName: string) {
-    if (Platform.OS !== 'web') {
-      Alert.alert('PDF', 'La descarga directa de PDF esta habilitada en web.');
+  async function downloadArrayBufferAsPdf(buffer: ArrayBuffer, fileName: string) {
+    if (Platform.OS === 'web') {
+      const blob = new Blob([buffer], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
       return;
     }
 
-    const blob = new Blob([buffer], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = fileName;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    URL.revokeObjectURL(url);
+    const base64 = encode(buffer);
+    const baseDir = FileSystem.cacheDirectory ?? FileSystem.documentDirectory;
+
+    if (!baseDir) {
+      throw {
+        status: 500,
+        message: 'No se pudo acceder al almacenamiento del dispositivo.',
+      } as ApiError;
+    }
+
+    const fileUri = `${baseDir}${fileName}`;
+    await FileSystem.writeAsStringAsync(fileUri, base64, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    const canShare = await Sharing.isAvailableAsync();
+    if (canShare) {
+      await Sharing.shareAsync(fileUri, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'Compartir PDF',
+        UTI: 'com.adobe.pdf',
+      });
+      return;
+    }
+
+    Alert.alert('PDF generado', `Archivo guardado en: ${fileUri}`);
   }
 
   async function handlePdfDownload(kind: 'general' | 'placa') {
@@ -175,7 +203,7 @@ export default function HistorialScreen() {
     try {
       if (kind === 'general') {
         const data = await downloadGeneralMovimientosPdf();
-        downloadArrayBufferAsPdf(data, 'historial-movimientos-general.pdf');
+        await downloadArrayBufferAsPdf(data, 'historial-movimientos-general.pdf');
       }
 
       if (kind === 'placa') {
@@ -188,7 +216,7 @@ export default function HistorialScreen() {
         }
 
         const data = await downloadMovimientosPdf(placa);
-        downloadArrayBufferAsPdf(data, `historial-movimientos-${placa}.pdf`);
+        await downloadArrayBufferAsPdf(data, `historial-movimientos-${placa}.pdf`);
       }
     } catch (err) {
       setError((err as ApiError).message);
